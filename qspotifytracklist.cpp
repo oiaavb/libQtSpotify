@@ -280,6 +280,10 @@ int QSpotifyTrackList::totalDuration() const
 
 int QSpotifyTrackList::nextAvailable(int i)
 {
+    // Prevent calling QSpotifyTrackList::at() with index out of range.
+    if (!count())
+        return i;
+
     do {
         ++i;
     } while (i < count() && !at(i)->isAvailable());
@@ -288,6 +292,10 @@ int QSpotifyTrackList::nextAvailable(int i)
 
 int QSpotifyTrackList::previousAvailable(int i)
 {
+    // Prevent calling QSpotifyTrackList::at() with index out of range.
+    if (!count())
+        return i;
+
     do {
         --i;
     } while (i > -1 && !at(i)->isAvailable());
