@@ -68,7 +68,7 @@ public:
 
     QSpotifyPlaylistContainer *playlistContainer() const;
     QSpotifyPlaylist *starredList() const;
-    QSpotifyPlaylist *inbox() const;
+    Q_INVOKABLE QSpotifyPlaylist *inbox() const;
 
     QList<QSpotifyPlaylist *> playlists() const;
     QList<QObject *> playlistsAsQObject() const;
