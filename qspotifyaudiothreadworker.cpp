@@ -8,6 +8,7 @@
 
 #include "qspotifysession.h"
 #include "qspotifyevents.h"
+#include "qspotifylogging.h"
 
 QSpotifyRingbuffer g_buffer;
 QMutex g_mutex;
@@ -31,7 +32,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
 {
     // Ignore timer events to have less log trashing
     if(e->type() != QEvent::Timer)
-        qDebug() << "QSpotifyAudioThreadWorker::event" << e->type();
+        qCDebug(qlsAudioThread) << "QSpotifyAudioThreadWorker::event" << e->type();
     if (e->type() == StreamingStartedEventType) {
         QMutexLocker lock(&g_mutex);
         QSpotifyStreamingStartedEvent *ev = static_cast<QSpotifyStreamingStartedEvent *>(e);
@@ -98,7 +99,7 @@ bool QSpotifyAudioThreadWorker::event(QEvent *e)
 
 void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
 {
-    qDebug() << "QSpotifyAudioThreadWorker::startStreaming";
+    qCDebug(qlsAudioThread) << "QSpotifyAudioThreadWorker::startStreaming";
     if (!m_audioOutput) {
         QAudioFormat af;
         af.setChannelCount(channels);
@@ -112,7 +113,7 @@ void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
             QList<QAudioDeviceInfo> devices = QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
             for (int i = 0; i < devices.size(); i++) {
                 QAudioDeviceInfo dev = devices[i];
-                qWarning() << dev.deviceName();
+                qCWarning(qlsAudioThread) << dev.deviceName();
             }
             QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(StopEventType)));
             return;
@@ -133,7 +134,7 @@ void QSpotifyAudioThreadWorker::startStreaming(int channels, int sampleRate)
 
 void QSpotifyAudioThreadWorker::updateAudioBuffer()
 {
-//    qDebug() << "QSpotifyAudioThreadWorker::updateAudioBuffer";
+    qCDebug(qlsAudioThread) << "QSpotifyAudioThreadWorker::updateAudioBuffer";
     if (!m_audioOutput)
         return;
 

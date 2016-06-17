@@ -51,6 +51,7 @@
 #include "qspotifytracklist.h"
 #include "qspotifyuser.h"
 #include "qspotifycachemanager.h"
+#include "qspotifylogging.h"
 
 uint qHash(const std::shared_ptr<QSpotifyTrack> &v) {
     std::hash<std::shared_ptr<QSpotifyTrack> > hash;
@@ -116,7 +117,7 @@ bool QSpotifyTrack::updateData()
         char buffer[256];
         int uriSize = sp_link_as_string(link, &buffer[0], 256);
         if(uriSize >= 256) {
-            qWarning() << "Link is larger than buffer";
+            qCWarning(qlsTrack) << "Link is larger than buffer";
         }
         m_url = QString::fromUtf8(&buffer[0], uriSize);
         sp_link_release(link);

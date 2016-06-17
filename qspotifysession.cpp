@@ -72,6 +72,8 @@
 #include "qspotifyplaylist.h"
 #include "qspotifycachemanager.h"
 
+#include "qspotifylogging.h"
+
 #include "qspotifyaudiothreadworker.h"
 
 #include "mpris/mprismediaplayer.h"
@@ -83,7 +85,7 @@ QSpotifySession *QSpotifySession::m_instance = nullptr;
 
 static void SP_CALLCONV callback_logged_in(sp_session *, sp_error error)
 {
-    qDebug() << "Logged in";
+    qCDebug(qlsSession) << "Logged in";
     QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyConnectionErrorEvent(error));
     if (error == SP_ERROR_OK)
         QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(LoggedInEventType)));
@@ -91,37 +93,37 @@ static void SP_CALLCONV callback_logged_in(sp_session *, sp_error error)
 
 static void SP_CALLCONV callback_logged_out(sp_session *)
 {
-    qDebug() << "Logged out";
+    qCDebug(qlsSession) << "Logged out";
     QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(LoggedOutEventType)));
 }
 
 static void SP_CALLCONV callback_connection_error(sp_session *, sp_error error)
 {
-    qDebug() << "Connection error ";
+    qCDebug(qlsSession) << "Connection error ";
     QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyConnectionErrorEvent(error));
 }
 
 static void SP_CALLCONV callback_notify_main_thread(sp_session *)
 {
-    qDebug() << "Notify main thread";
+    qCDebug(qlsSession) << "Notify main thread";
     QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(NotifyMainThreadEventType)));
 }
 
 static void SP_CALLCONV callback_metadata_updated(sp_session *)
 {
-    qDebug() << "Metadata updated";
+    qCDebug(qlsSession) << "Metadata updated";
     QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(MetaDataEventType)));
 }
 
 static void SP_CALLCONV callback_userinfo_updated(sp_session* )
 {
-    qDebug() << "User info updated";
+    qCDebug(qlsSession) << "User info updated";
     QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(MetaDataEventType)));
 }
 
 static int SP_CALLCONV callback_music_delivery(sp_session *, const sp_audioformat *format, const void *frames, int num_frames)
 {
-//    qDebug() << "Music delivery";
+//    qCDebug(qlsSession) << "Music delivery";
     if (num_frames == 0)
         return 0;
 
@@ -151,13 +153,13 @@ static int SP_CALLCONV callback_music_delivery(sp_session *, const sp_audioforma
 
 static void SP_CALLCONV callback_end_of_track(sp_session *)
 {
-    qDebug() << "End of track";
+    qCDebug(qlsSession) << "End of track";
     QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(EndOfTrackEventType)));
 }
 
 static void SP_CALLCONV callback_play_token_lost(sp_session *)
 {
-    qDebug() << "Play token lost";
+    qCDebug(qlsSession) << "Play token lost";
     QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(QEvent::Type(PlayTokenLostEventType)));
 }
 
@@ -174,19 +176,19 @@ static void SP_CALLCONV callback_log_message(sp_session *, const char *data)
 
 static void SP_CALLCONV callback_offline_error(sp_session *, sp_error error)
 {
-    qDebug() << "Offline error " << int(error);
+    qCDebug(qlsSession) << "Offline error " << int(error);
     if (error != SP_ERROR_OK)
         QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyOfflineErrorEvent(error));
 }
 
 static void SP_CALLCONV callback_scrobble_error(sp_session *, sp_error error)
 {
-    qDebug() << "Scrobble error " << int(error);
+    qCDebug(qlsSession) << "Scrobble error " << int(error);
 }
 
 static void SP_CALLCONV callback_connectionstate_updated(sp_session *)
 {
-    qDebug() << "Connection state updated";
+    qCDebug(qlsSession) << "Connection state updated";
     QCoreApplication::postEvent(QSpotifySession::instance(), new QEvent(ConnectionStateUpdateEventType));
 }
 
@@ -338,7 +340,7 @@ void QSpotifySession::init()
 
 QSpotifySession::~QSpotifySession()
 {
-    qDebug() << "QSpotifySession::cleanUp";
+    qCDebug(qlsSession) << "QSpotifySession::cleanUp";
     if (m_sp_session)
         sp_session_release(m_sp_session);
     free(dataPath);
@@ -346,7 +348,7 @@ QSpotifySession::~QSpotifySession()
 
 QSpotifySession *QSpotifySession::instance()
 {
-//    qDebug() << "QSpotifySession::instance";
+//    qCDebug(qlsSession) << "QSpotifySession::instance";
     if (!m_instance) {
         m_instance = new QSpotifySession;
         m_instance->init();
@@ -407,12 +409,12 @@ void QSpotifySession::setScrobble(bool scrobble)
 bool QSpotifySession::event(QEvent *e)
 {
     if (e->type() == NotifyMainThreadEventType) {
-        qDebug() << "Process spotify event";
+        qCDebug(qlsSession) << "Process spotify event";
         processSpotifyEvents();
         e->accept();
         return true;
     } else if (e->type() == QEvent::Timer) {
-        qDebug() << "Timer, start spotify events";
+        qCDebug(qlsSession) << "Timer, start spotify events";
         QTimerEvent *te = static_cast<QTimerEvent *>(e);
         if (te->timerId() == m_timerID) {
             processSpotifyEvents();
@@ -420,29 +422,29 @@ bool QSpotifySession::event(QEvent *e)
             return true;
         }
     } else if (e->type() == ConnectionErrorEventType) {
-        qDebug() << "Connection error";
+        qCDebug(qlsSession) << "Connection error";
         QSpotifyConnectionErrorEvent *ev = static_cast<QSpotifyConnectionErrorEvent *>(e);
         setConnectionError(ConnectionError(ev->error()), QString::fromUtf8(sp_error_message(ev->error())));
         e->accept();
         return true;
     } else if (e->type() == MetaDataEventType) {
-        qDebug() << "Meta data";
+        qCDebug(qlsSession) << "Meta data";
         emit metadataUpdated();
         e->accept();
         return true;
     } else if (e->type() == EndOfTrackEventType) {
-        qDebug() << "End track";
+        qCDebug(qlsSession) << "End track";
         m_trackChangedAutomatically = true;
         playNext();
         e->accept();
         return true;
     } else if (e->type() == StopEventType) {
-        qDebug() << "Stop";
+        qCDebug(qlsSession) << "Stop";
         stop();
         e->accept();
         return true;
     } else if (e->type() == TrackProgressEventType) {
-        qDebug() << "Track progress";
+        qCDebug(qlsSession) << "Track progress";
         if(!m_isPlaying) {
             e->accept();
             return true;
@@ -463,49 +465,49 @@ bool QSpotifySession::event(QEvent *e)
         e->accept();
         return true;
     } else if (e->type() == SendImageRequestEventType) {
-        qDebug() << "Send image request";
+        qCDebug(qlsSession) << "Send image request";
         QSpotifyRequestImageEvent *ev = static_cast<QSpotifyRequestImageEvent *>(e);
         sendImageRequest(ev->imageId());
         e->accept();
         return true;
     } else if (e->type() == ReceiveImageRequestEventType) {
-        qDebug() << "Receive image request";
+        qCDebug(qlsSession) << "Receive image request";
         QSpotifyReceiveImageEvent *ev = static_cast<QSpotifyReceiveImageEvent *>(e);
         receiveImageResponse(ev->image());
         e->accept();
         return true;
     } else if (e->type() == PlayTokenLostEventType) {
-        qDebug() << "Play token lost";
+        qCDebug(qlsSession) << "Play token lost";
         emit playTokenLost();
         pause();
         e->accept();
         return true;
     } else if (e->type() == LoggedInEventType) {
-        qDebug() << "Logged in 1";
+        qCDebug(qlsSession) << "Logged in 1";
         onLoggedIn();
         e->accept();
         return true;
     } else if (e->type() == LoggedOutEventType) {
-        qDebug() << "Logged out";
+        qCDebug(qlsSession) << "Logged out";
         onLoggedOut();
         e->accept();
         return true;
     } else if (e->type() == OfflineErrorEventType) {
-        qDebug() << "Offline error";
+        qCDebug(qlsSession) << "Offline error";
         QSpotifyOfflineErrorEvent *ev = static_cast<QSpotifyOfflineErrorEvent *>(e);
         m_offlineErrorMessage = QString::fromUtf8(sp_error_message(ev->error()));
         emit offlineErrorMessageChanged();
         e->accept();
         return true;
     } else if (e->type() == ScrobbleLoginErrorEventType) {
-        qDebug() << "Scrobble login error";
+        qCDebug(qlsSession) << "Scrobble login error";
         m_lfmLoggedIn = false;
         emit lfmLoggedInChanged();
         emit lfmLoginError();
         e->accept();
         return true;
     } else if (e->type() == ConnectionStateUpdateEventType) {
-        qDebug() << "Connectionstate update event";
+        qCDebug(qlsSession) << "Connectionstate update event";
         setConnectionStatus(ConnectionStatus(sp_session_connectionstate(m_sp_session)));
         if (m_offlineMode && m_connectionStatus == LoggedIn) {
             setConnectionRules(m_connectionRules | AllowNetwork);
@@ -519,7 +521,7 @@ bool QSpotifySession::event(QEvent *e)
 
 void QSpotifySession::initiateQuit()
 {
-    qDebug() << "QSpotifySession::initiateQuit";
+    qCDebug(qlsSession) << "QSpotifySession::initiateQuit";
     stop();
     m_audioThread->quit();
     m_audioThread->wait();
@@ -538,7 +540,7 @@ void QSpotifySession::initiateQuit()
 
 void QSpotifySession::processSpotifyEvents()
 {
-    qDebug() << "QSpotifySession::processSpotifyEvents";
+    qCDebug(qlsSession) << "QSpotifySession::processSpotifyEvents";
     if (m_timerID)
         killTimer(m_timerID);
 
@@ -550,7 +552,7 @@ void QSpotifySession::processSpotifyEvents()
     do {
         assert(isValid());
 
-        qDebug() << "Processing events...";
+        qCDebug(qlsSession) << "Processing events...";
         sp_session_process_events(m_sp_session, &nextTimeout);
     } while (nextTimeout == 0);
     m_timerID = startTimer(nextTimeout);
@@ -558,7 +560,7 @@ void QSpotifySession::processSpotifyEvents()
 
 void QSpotifySession::setStreamingQuality(StreamingQuality q)
 {
-    qDebug() << "QSpotifySession::setStreamingQuality";
+    qCDebug(qlsSession) << "QSpotifySession::setStreamingQuality";
     if (m_streamingQuality == q)
         return;
 
@@ -571,7 +573,7 @@ void QSpotifySession::setStreamingQuality(StreamingQuality q)
 
 void QSpotifySession::setSyncQuality(StreamingQuality q)
 {
-    qDebug() << "QSpotifySession::setSyncQuality" << q;
+    qCDebug(qlsSession) << "QSpotifySession::setSyncQuality" << q;
     if (m_syncQuality == q)
         return;
 
@@ -584,7 +586,7 @@ void QSpotifySession::setSyncQuality(StreamingQuality q)
 
 void QSpotifySession::onLoggedIn()
 {
-    qDebug() << "Logged in";
+    qCDebug(qlsSession) << "Logged in";
 
     if (m_user)
         return;
@@ -608,12 +610,12 @@ void QSpotifySession::onLoggedIn()
 
     sp_session_flush_caches(m_sp_session);
     checkNetworkAccess();
-    qDebug() << "Done";
+    qCDebug(qlsSession) << "Done";
 }
 
 void QSpotifySession::onLoggedOut()
 {
-    qDebug() << "QSpotifySession::onLoggedOut";
+    qCDebug(qlsSession) << "QSpotifySession::onLoggedOut";
     if (!m_explicitLogout)
         return;
 
@@ -633,7 +635,7 @@ void QSpotifySession::onLoggedOut()
 
 void QSpotifySession::setConnectionStatus(ConnectionStatus status)
 {
-    qDebug() << "QSpotifySession::setConnectionStatus" << status;
+    qCDebug(qlsSession) << "QSpotifySession::setConnectionStatus" << status;
     if (m_connectionStatus == status)
         return;
 
@@ -647,7 +649,7 @@ void QSpotifySession::setConnectionStatus(ConnectionStatus status)
 
 void QSpotifySession::setConnectionError(ConnectionError error, const QString &message)
 {
-    qDebug() << "QSpotifySession::setConnectionError" << error << message;
+    qCDebug(qlsSession) << "QSpotifySession::setConnectionError" << error << message;
     if (error == Ok || m_offlineMode)
         return;
 
@@ -674,7 +676,7 @@ void QSpotifySession::setConnectionError(ConnectionError error, const QString &m
 
 void QSpotifySession::login(const QString &username, const QString &password)
 {
-    qDebug() << "QSpotifySession::login";
+    qCDebug(qlsSession) << "QSpotifySession::login";
     if (!isValid() || m_isLoggedIn || m_pending_connectionRequest)
         return;
 
@@ -683,17 +685,17 @@ void QSpotifySession::login(const QString &username, const QString &password)
     emit loggingIn();
 
     if (password.isEmpty()) {
-        qDebug() << "Relogin";
+        qCDebug(qlsSession) << "Relogin";
         sp_session_relogin(m_sp_session);
     } else {
-        qDebug() << "Fresh login";
+        qCDebug(qlsSession) << "Fresh login";
         sp_session_login(m_sp_session, username.toUtf8().constData(), password.toUtf8().constData(), true, NULL);
     }
 }
 
 void QSpotifySession::logout(bool keepLoginInfo)
 {
-    qDebug() << "QSpotifySession::logout";
+    qCDebug(qlsSession) << "QSpotifySession::logout";
     if (!m_isLoggedIn || m_pending_connectionRequest)
         return;
 
@@ -720,7 +722,7 @@ void QSpotifySession::logout(bool keepLoginInfo)
 
 void QSpotifySession::setShuffle(bool s)
 {
-    qDebug() << "QSpotifySession::setShuffle";
+    qCDebug(qlsSession) << "QSpotifySession::setShuffle";
     if (m_shuffle == s)
         return;
 
@@ -732,7 +734,7 @@ void QSpotifySession::setShuffle(bool s)
 
 void QSpotifySession::setRepeat(bool r)
 {
-    qDebug() << "QSpotifySession::setRepeat";
+    qCDebug(qlsSession) << "QSpotifySession::setRepeat";
     if (m_repeat == r)
         return;
 
@@ -744,7 +746,7 @@ void QSpotifySession::setRepeat(bool r)
 
 void QSpotifySession::setRepeatOne(bool r)
 {
-    qDebug() << "QSpotifySession::setRepeatOne";
+    qCDebug(qlsSession) << "QSpotifySession::setRepeatOne";
     if (m_repeatOne == r)
         return;
 
@@ -755,7 +757,7 @@ void QSpotifySession::setRepeatOne(bool r)
 
 void QSpotifySession::setVolumeNormalize(bool normalize)
 {
-    qDebug() << "QSpotifySession::setVolumeNormalize" << normalize;
+    qCDebug(qlsSession) << "QSpotifySession::setVolumeNormalize" << normalize;
     if(m_volumeNormalize == normalize)
         return;
 
@@ -764,14 +766,14 @@ void QSpotifySession::setVolumeNormalize(bool normalize)
     m_volumeNormalize = normalize;
 
     if(sp_session_set_volume_normalization(m_sp_session, normalize) != SP_ERROR_OK)
-        qDebug() << "Failed to set volume normalization";
+        qCDebug(qlsSession) << "Failed to set volume normalization";
 
     emit volumeNormalizeChanged();
 }
 
 void QSpotifySession::play(std::shared_ptr<QSpotifyTrack> track, bool restart)
 {
-    qDebug() << "QSpotifySession::play";
+    qCDebug(qlsSession) << "QSpotifySession::play";
     if (track->error() != QSpotifyTrack::Ok || !track->isAvailable() || (m_currentTrack == track && !restart))
         return;
 
@@ -818,7 +820,7 @@ void QSpotifySession::play(std::shared_ptr<QSpotifyTrack> track, bool restart)
 
 void QSpotifySession::beginPlayBack(bool notifyThread)
 {
-    qDebug() << "QSpotifySession::beginPlayBack";
+    qCDebug(qlsSession) << "QSpotifySession::beginPlayBack";
     sp_session_player_play(m_sp_session, true);
     m_isPlaying = true;
     emit isPlayingChanged();
@@ -829,7 +831,7 @@ void QSpotifySession::beginPlayBack(bool notifyThread)
 
 void QSpotifySession::pause(bool notifyThread)
 {
-    qDebug() << "QSpotifySession::pause";
+    qCDebug(qlsSession) << "QSpotifySession::pause";
     if (!m_isPlaying)
         return;
 
@@ -852,7 +854,7 @@ void QSpotifySession::resume()
 
 void QSpotifySession::stop(bool dontEmitSignals)
 {
-    qDebug() << "QSpotifySession::stop";
+    qCDebug(qlsSession) << "QSpotifySession::stop";
     if (!m_isPlaying && !m_currentTrack)
         return;
 
@@ -888,43 +890,43 @@ void QSpotifySession::seek(int offset)
 
 void QSpotifySession::playNext()
 {
-    qDebug() << "QSpotifySession::playNext";
+    qCDebug(qlsSession) << "QSpotifySession::playNext";
     m_playQueue->playNext(m_repeatOne);
 }
 
 void QSpotifySession::playPrevious()
 {
-    qDebug() << "QSpotifySession::playPrevious";
+    qCDebug(qlsSession) << "QSpotifySession::playPrevious";
     m_playQueue->playPrevious();
 }
 
 void QSpotifySession::enqueue(std::shared_ptr<QSpotifyTrack> track)
 {
-    qDebug() << "QSpotifySession::enqeue";
+    qCDebug(qlsSession) << "QSpotifySession::enqeue";
     m_playQueue->enqueueTrack(track);
 }
 
 void QSpotifySession::audioStateChange(QAudio::State state)
 {
-    qDebug() << "audio state change";
+    qCDebug(qlsSession) << "audio state change";
     switch(state) {
     case QAudio::ActiveState:
-        qDebug() << "Audio is now in active state";
+        qCDebug(qlsSession) << "Audio is now in active state";
         beginPlayBack(false);
         break;
     case QAudio::SuspendedState:
-        qDebug() << "Audio is now in supended state";
+        qCDebug(qlsSession) << "Audio is now in supended state";
         pause(false);
         break;
     default:
-        qDebug() << "unhandled audioStateChange" << state;
+        qCDebug(qlsSession) << "unhandled audioStateChange" << state;
         break;
     }
 }
 
 QString QSpotifySession::formatDuration(qint64 d) const
 {
-//    qDebug() << "QSpotifySession::formatDuration";
+//    qCDebug(qlsSession) << "QSpotifySession::formatDuration";
     d /= 1000;
     int s = d % 60;
     d /= 60;
@@ -942,7 +944,7 @@ QString QSpotifySession::formatDuration(qint64 d) const
 
 QString QSpotifySession::getStoredLoginInformation() const
 {
-    qDebug() << "QSpotifySession::getStoredLoginInformation";
+    qCDebug(qlsSession) << "QSpotifySession::getStoredLoginInformation";
     QString username;
     char buffer[200];
     int size = sp_session_remembered_user(m_sp_session, &buffer[0], 200);
@@ -954,7 +956,7 @@ QString QSpotifySession::getStoredLoginInformation() const
 
 QImage QSpotifySession::requestSpotifyImage(const QString &id)
 {
-    qDebug() << "QSpotifySession::requestSpotifyImage";
+    qCDebug(qlsSession) << "QSpotifySession::requestSpotifyImage";
     g_imageRequestMutex.lock();
     g_imageRequestConditions.insert(id, new QWaitCondition);
     QCoreApplication::postEvent(this, new QSpotifyRequestImageEvent(id));
@@ -970,13 +972,13 @@ QImage QSpotifySession::requestSpotifyImage(const QString &id)
 
 static void SP_CALLCONV callback_image_loaded(sp_image *image, void *)
 {
-    qDebug() << "callback_image_loaded";
+    qCDebug(qlsSession) << "callback_image_loaded";
     QCoreApplication::postEvent(QSpotifySession::instance(), new QSpotifyReceiveImageEvent(image));
 }
 
 void QSpotifySession::sendImageRequest(const QString &id)
 {
-    qDebug() << "QSpotifySession::sendImageRequest" << id;
+    qCDebug(qlsSession) << "QSpotifySession::sendImageRequest" << id;
     sp_image *image = nullptr;
     byte *idPtr = QSpotifyPlaylist::getImageIdPtr(id);
     if(idPtr)
@@ -998,7 +1000,7 @@ void QSpotifySession::sendImageRequest(const QString &id)
 void QSpotifySession::receiveImageResponse(sp_image *image)
 {
     Q_ASSERT(image);
-    qDebug() << "QSpotifySession::receiveImageResponse";
+    qCDebug(qlsSession) << "QSpotifySession::receiveImageResponse";
     sp_image_remove_load_callback(image, callback_image_loaded, 0);
 
     QString id = g_imageRequestObject.take(image);
@@ -1019,25 +1021,25 @@ void QSpotifySession::receiveImageResponse(sp_image *image)
 
 bool QSpotifySession::isOnline() const
 {
-    qDebug() << "QSpotifySession::isOnline";
+    qCDebug(qlsSession) << "QSpotifySession::isOnline";
     return m_networkingStatus->status() == ubuntu::connectivity::NetworkingStatus::Status::Online;
 }
 
 void QSpotifySession::onOnlineChanged()
 {
-    qDebug() << "QSpotifySession::onOnlineChanged";
+    qCDebug(qlsSession) << "QSpotifySession::onOnlineChanged";
     checkNetworkAccess();
 }
 
 void QSpotifySession::configurationChanged()
 {
-    qDebug() << "QSpotifySession::configurationChanged";
+    qCDebug(qlsSession) << "QSpotifySession::configurationChanged";
     checkNetworkAccess();
 }
 
 void QSpotifySession::checkNetworkAccess()
 {
-    qDebug() << "QSpotifySession::checkNetworkAccess";
+    qCDebug(qlsSession) << "QSpotifySession::checkNetworkAccess";
     if (!isOnline()) {
         sp_session_set_connection_type(m_sp_session, SP_CONNECTION_TYPE_NONE);
         setOfflineMode(true, true);
@@ -1061,7 +1063,7 @@ void QSpotifySession::checkNetworkAccess()
 
 void QSpotifySession::setConnectionRules(ConnectionRules r)
 {
-    qDebug() << "QSpotifySession::setConnectionRules";
+    qCDebug(qlsSession) << "QSpotifySession::setConnectionRules";
     if (m_connectionRules == r)
         return;
 
@@ -1071,7 +1073,7 @@ void QSpotifySession::setConnectionRules(ConnectionRules r)
 
 void QSpotifySession::setOfflineMode(bool on, bool forced)
 {
-    qDebug() << "QSpotifySession::setOfflineMode" << on << forced;
+    qCDebug(qlsSession) << "QSpotifySession::setOfflineMode" << on << forced;
     if (m_offlineMode == on)
         return;
 
@@ -1105,7 +1107,7 @@ bool QSpotifySession::privateSession() const
 
 void QSpotifySession::setPrivateSession(bool on)
 {
-    qDebug() << "QSpotifySession::setPrivateSession " << on;
+    qCDebug(qlsSession) << "QSpotifySession::setPrivateSession " << on;
 
     if(!m_isLoggedIn)
         return;
@@ -1115,7 +1117,7 @@ void QSpotifySession::setPrivateSession(bool on)
 
 void QSpotifySession::setSyncOverMobile(bool s)
 {
-    qDebug() << "QSpotifySession::setSyncOverMobile";
+    qCDebug(qlsSession) << "QSpotifySession::setSyncOverMobile";
     if (m_syncOverMobile == s)
         return;
 
@@ -1129,12 +1131,12 @@ void QSpotifySession::setSyncOverMobile(bool s)
 }
 
 void QSpotifySession::clearCache() {
-    qDebug() << "QSpotifySession::clearCache";
+    qCDebug(qlsSession) << "QSpotifySession::clearCache";
     // Needs reimplementing
 }
 
 void QSpotifySession::handleUri(QString uri) {
-    qDebug() << "QSpotifySession::handleUri";
+    qCDebug(qlsSession) << "QSpotifySession::handleUri";
     if (!m_isLoggedIn) {
         m_uriToOpen = uri;
         return;

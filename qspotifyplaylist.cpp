@@ -54,6 +54,7 @@
 #include "qspotifytrack.h"
 #include "qspotifyuser.h"
 #include "qspotifycachemanager.h"
+#include "qspotifylogging.h"
 
 static QHash<QString, byte*> m_imagePointers;
 
@@ -231,7 +232,7 @@ bool QSpotifyPlaylist::updateData()
             char buffer[200];
             int uriSize = sp_link_as_string(link, &buffer[0], 200);
             if(uriSize >= 200) {
-                qWarning() << "Link is larger than buffer !!";
+                qCWarning(qlsPlaylist) << "Link is larger than buffer !!";
             }
             m_hashKey = QString::fromUtf8(&buffer[0], uriSize);
             sp_link_release(link);
@@ -288,7 +289,7 @@ bool QSpotifyPlaylist::updateData()
         for (int i = 0; i < count; ++i) {
             auto strack = sp_playlist_track(m_sp_playlist, i);
             if(!strack) {
-                qWarning() << "###No strack";
+                qCWarning(qlsPlaylist) << "###No strack";
                 continue;
             }
             addTrack(strack, insertPos);
@@ -393,7 +394,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
         e->accept();
         return true;
     } else if (e->type() == QEvent::User + 3) {
-        qDebug() << "Track add start";
+        qCDebug(qlsPlaylist) << "Track add start";
         // TracksAdded event
         QSpotifyTracksAddedEvent *ev = static_cast<QSpotifyTracksAddedEvent *>(e);
         QVector<sp_track*> tracks = ev->tracks();
@@ -403,7 +404,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
         for (int i = 0; i < tracks.count(); ++i) {
             auto strack = tracks.at(i);
             if(!strack) {
-                qWarning() << "## No track";
+                qCWarning(qlsPlaylist) << "## No track";
                 continue;
             }
             if (pos < amount && strack == sp_playlist_track(m_sp_playlist, pos)) {
@@ -411,7 +412,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
                 if(currentList)
                     QSpotifySession::instance()->playQueue()->m_implicitTracks->appendRow(t);
             } else {
-                qDebug() << "Unmatched track found";
+                qCDebug(qlsPlaylist) << "Unmatched track found";
             }
         }
         if(currentList)
@@ -420,7 +421,7 @@ bool QSpotifyPlaylist::event(QEvent *e)
         if (m_type == Starred || m_type == Inbox)
             emit tracksAdded(tracks);
         m_trackList->setShuffle(m_trackList->isShuffle());
-        qDebug() << "Track add end";
+        qCDebug(qlsPlaylist) << "Track add end";
         e->accept();
         return true;
     } else if (e->type() == QEvent::User + 4) {

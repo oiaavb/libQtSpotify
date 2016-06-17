@@ -32,6 +32,7 @@ SOURCES += ../libQtSpotify/qspotifysession.cpp \
     ../libQtSpotify/listmodels/qspotifyplaylistsearchlist.cpp \
     ../libQtSpotify/qspotifycachemanager.cpp \
     ../libQtSpotify/qspotifyringbuffer.cpp \
+    ../libQtSpotify/qspotifylogging.cpp \
     ../libQtSpotify/mpris/mprismediaplayerplayer.cpp
 
 HEADERS += ../libQtSpotify/qspotifysession.h \
@@ -63,6 +64,7 @@ HEADERS += ../libQtSpotify/qspotifysession.h \
     ../libQtSpotify/listmodels/qspotifyplaylistsearchlist.h \
     ../libQtSpotify/qspotifycachemanager.h \
     ../libQtSpotify/qspotifyringbuffer.h \
+    ../libQtSpotify/qspotifylogging.h \
     ../libQtSpotify/mpris/mprismediaplayer.h \
     ../libQtSpotify/mpris/mprismediaplayerplayer.h
 

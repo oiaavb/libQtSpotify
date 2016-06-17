@@ -50,6 +50,7 @@
 
 #include "qspotifyplaylist.h"
 #include "qspotifysession.h"
+#include "qspotifylogging.h"
 
 class QSpotifyPlaylistAddedEvent : public QEvent
 {
@@ -254,7 +255,7 @@ bool QSpotifyPlaylistContainer::event(QEvent *e)
         return true;
     } else if (e->type() == QEvent::User + 2) {
         // PlaylistRemoved event
-        qDebug() << "Playlist removed event";
+        qCDebug(qlsPlaylistContainer) << "Playlist removed event";
         QSpotifyPlaylistRemovedEvent *ev = static_cast<QSpotifyPlaylistRemovedEvent *>(e);
         int i = ev->position();
         if (i >= 0 && i < m_playlists.count()) {

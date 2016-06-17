@@ -17,6 +17,7 @@
 #include "qspotifyplaylist.h"
 #include "qspotifyartist.h"
 #include "qspotifyalbum.h"
+#include "qspotifylogging.h"
 
 static QHash<sp_track *, std::shared_ptr<QSpotifyTrack> > m_tracks;
 static QMutex trackMutex;
@@ -170,11 +171,11 @@ void QSpotifyCacheManager::cleanTable(T &hash, QMutex *mutex)
 
 void QSpotifyCacheManager::cleanUp()
 {
-    qDebug() << "#Before Clean: Tracks" << m_tracks.size() << "Artists" << m_artists.size() << "Ablums" << m_albums.size();
+    qCDebug(qlsCacheManager) << "#Before Clean: Tracks" << m_tracks.size() << "Artists" << m_artists.size() << "Ablums" << m_albums.size();
     cleanTable<QHash<sp_track *, std::shared_ptr<QSpotifyTrack> > >(m_tracks, &trackMutex);
     cleanTable<QHash<sp_artist *, std::shared_ptr<QSpotifyArtist> > >(m_artists, &artistMutex);
     cleanTable<QHash<sp_album *, std::shared_ptr<QSpotifyAlbum> > >(m_albums, &albumMutex);
-    qDebug() << "#After Clean: Tracks" << m_tracks.size() << "Artists" << m_artists.size() << "Ablums" << m_albums.size();
+    qCDebug(qlsCacheManager) << "#After Clean: Tracks" << m_tracks.size() << "Artists" << m_artists.size() << "Ablums" << m_albums.size();
 }
 
 int QSpotifyCacheManager::numTracks()
