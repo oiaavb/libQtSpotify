@@ -166,8 +166,9 @@ void QSpotifyPlayQueue::playNext(bool repeatOne)
                 if (m_repeat) {
                     m_implicitTracks->play();
                 } else {
-                    QSpotifySession::instance()->stop();
-                    clearTrackList();
+                    // We're at the end of the queue, just restart from the beginning.
+                    // This is the behaviour of Spotify for Android.
+                    m_implicitTracks->playTrackAtIndex(0);
                 }
             }
         } else {
@@ -188,13 +189,21 @@ void QSpotifyPlayQueue::playPrevious()
         m_currentExplicitTrack.reset();
     }
 
-    if (!m_implicitTracks->previous()) {
-        if (m_repeat) {
-            m_implicitTracks->playLast();
-        } else {
-            QSpotifySession::instance()->stop();
-            clearTrackList();
+    if (QSpotifySession::instance()->currentTrackPosition() < 3000) {
+        if (!m_implicitTracks->previous()) {
+            if (m_repeat) {
+                m_implicitTracks->playLast();
+            } else {
+                // If this is the first song in the queue, just restart it.
+                // This is the behaviour of Spotify for Android.
+                QSpotifySession::instance()->seek(0);
+            }
         }
+    } else {
+        // If the song has been reproduced for more than three seconds,
+        // just restart the songs.
+        // This is the behaviour of Spotify for Android.
+        QSpotifySession::instance()->seek(0);
     }
 
     emit tracksChanged();
