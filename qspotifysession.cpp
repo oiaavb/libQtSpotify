@@ -1149,6 +1149,7 @@ void QSpotifySession::handleUri(QString uri) {
         enqueue(q_track);
         play(q_track, true);
     }
+    sp_link_release(link);
 }
 
 QSpotifyTrack * QSpotifySession::getTrack(QString uri) {
