@@ -249,6 +249,7 @@ Q_SIGNALS:
     void lfmLoginError();
     void volumeNormalizeChanged();
     void readyToQuit();
+    void receivedImageResponse(const QString &id, QImage image);
 
 protected:
     bool event(QEvent *);

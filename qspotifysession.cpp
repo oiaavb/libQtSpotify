@@ -1017,6 +1017,8 @@ void QSpotifySession::receiveImageResponse(sp_image *image)
     g_imageRequestImages.insert(id, im);
     g_imageRequestConditions[id]->wakeAll();
     g_imageRequestMutex.unlock();
+
+    Q_EMIT receivedImageResponse(id, im);
 }
 
 bool QSpotifySession::isOnline() const
