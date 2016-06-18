@@ -203,6 +203,8 @@ public:
 
     Q_INVOKABLE void handleUri(QString uri);
     Q_INVOKABLE QSpotifyTrack *getTrack(QString uri);
+    Q_INVOKABLE QSpotifyPlaylist *getPlaylist(const QString &uri);
+    Q_INVOKABLE QSpotifyAlbum *getAlbum(const QString &uri);
 
 public Q_SLOTS:
     void login(const QString &username, const QString &password = QString());

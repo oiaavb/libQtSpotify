@@ -212,6 +212,7 @@ private:
     bool m_updateEventPosted;
 
     friend class QSpotifyPlaylistContainer;
+    friend class QSpotifySession;
     friend class QSpotifyUser;
     friend class QSpotifyTrack;
 

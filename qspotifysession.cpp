@@ -1165,6 +1165,45 @@ QSpotifyTrack * QSpotifySession::getTrack(QString uri) {
     }
 }
 
+// TODO: FIXME: Memory management
+QSpotifyPlaylist *QSpotifySession::getPlaylist(const QString &uri)
+{
+    QSpotifyPlaylist *q_playlist = nullptr;
+
+    sp_link *link = sp_link_create_from_string(uri.toLatin1().data());
+    sp_linktype link_type = sp_link_type(link);
+    if (link_type == SP_LINKTYPE_PLAYLIST) {
+        sp_playlist *pl = sp_playlist_create(m_sp_session, link);
+        if (pl != nullptr) {
+            q_playlist = new QSpotifyPlaylist(QSpotifyPlaylist::Playlist, pl, false);
+            q_playlist->updateData();
+        }
+    }
+
+    sp_link_release(link);
+
+    return q_playlist;
+}
+
+QSpotifyAlbum *QSpotifySession::getAlbum(const QString &uri)
+{
+    std::shared_ptr<QSpotifyAlbum> q_album = nullptr;
+
+    sp_link *link = sp_link_create_from_string(uri.toLatin1().data());
+    sp_linktype link_type = sp_link_type(link);
+    if (link_type == SP_LINKTYPE_ALBUM) {
+        sp_album *album = sp_link_as_album(link);
+        if (album != nullptr) {
+            q_album = QSpotifyCacheManager::instance().getAlbum(album);
+            q_album->updateData();
+        }
+    }
+
+    sp_link_release(link);
+
+    return q_album.get();
+}
+
 void QSpotifySession::flush() {
     sp_session_flush_caches(m_sp_session);
 }
